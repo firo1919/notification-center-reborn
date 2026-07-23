@@ -589,6 +589,8 @@ class NotificationCenter extends PanelMenu.Button {
 
     if(this.dndSig !== null){
       this.dndpref.disconnect(this.dndSig);
+    }
+    if (this.dndItem) {
       this.dndItem.destroy();
     }
 
@@ -613,6 +615,7 @@ class NotificationCenter extends PanelMenu.Button {
     this.mediaIcon.destroy();
     this.notificationIcon.destroy();
     this.notificationLabel.destroy();
+    this.noNotificationLabel.destroy();
     this._indicator.destroy();
 
     this.clearButton.destroy();
