@@ -6,12 +6,12 @@ Version 23.04
 */
 
 .notification-center-message-list {
-  padding: 8px 8px 10px 20px;
+  padding: 8px 12px;
   spacing: 6px;
 }
 
 .notification-center-message-list-empty {
-  padding: 8px 8px 0 20px;
+  padding: 8px 12px;
   min-height: 128px;
   margin-bottom: 20px;
   background-image: url("resource:///org/gnome/shell/theme/no-notifications.svg");

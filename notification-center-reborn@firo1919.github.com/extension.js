@@ -617,6 +617,13 @@ const NotificationCenterClass = GObject.registerClass(
                 } catch {
                     // ignore
                 }
+                if (typeof this._messageList.set_margin_left === "function") {
+                    this._messageList.set_margin_left(0);
+                    this._messageList.set_margin_right(0);
+                } else {
+                    this._messageList.margin_left = 0;
+                    this._messageList.margin_right = 0;
+                }
                 this.box.add_child(this._messageList);
                 this._messageList.visible = true;
 
