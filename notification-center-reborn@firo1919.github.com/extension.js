@@ -549,18 +549,26 @@ const NotificationCenterClass = GObject.registerClass(
         }
 
         _mediaSectionShouldShow() {
-            return Boolean(
-                this.mediaSection &&
-                typeof this.mediaSection._shouldShow === 'function' &&
-                this.mediaSection._shouldShow()
-            );
+            return false;
         }
 
         _notificationSectionCount() {
-            if (!this.notificationSection || !this.notificationSection._list) {
-                return 0;
+            if (this.notificationSection && this.notificationSection._list) {
+                return this.notificationSection._list.get_children().length;
             }
-            return this.notificationSection._list.get_children().length;
+            if (this._messageList) {
+                const children =
+                    typeof this._messageList.get_children === "function"
+                        ? this._messageList.get_children()
+                        : [];
+                return children.filter(
+                    (c) =>
+                        c &&
+                        c.visible &&
+                        c.style_class !== "event-placeholder",
+                ).length;
+            }
+            return 0;
         }
 
         shouldShowEventsSection() {
@@ -572,19 +580,19 @@ const NotificationCenterClass = GObject.registerClass(
                 return 0;
             }
             return children[0] &&
-                children[0].style_class === 'event-placeholder'
+                children[0].style_class === "event-placeholder"
                 ? 0
                 : children.length;
         }
 
         _setupDndItem() {
-            const dndPos = this.prefs.get_enum('dnd-position');
+            const dndPos = this.prefs.get_enum("dnd-position");
             if (dndPos !== 1 && dndPos !== 2) {
                 return;
             }
 
             this.dndItem._delegate = this;
-            this.dndItem.connect('toggled', () => this.dndToggle());
+            this.dndItem.connect("toggled", () => this.dndToggle());
             if (this._messageList._dndSwitch) {
                 this._messageList._dndSwitch.visible = false;
             }
@@ -603,85 +611,38 @@ const NotificationCenterClass = GObject.registerClass(
         }
 
         _setupSections() {
-            for (let i = 0; i < this.showingSections.length; i++) {
-                const secName = this.showingSections[i];
-                if (secName === 'events') {
-                    if (this.newEventsSectionParent && this.eventsSection) {
-                        try {
-                            this.newEventsSectionParent.remove_child(
-                                this.eventsSection
-                            );
-                        } catch {
-                            // ignore
-                        }
-                    }
-                    if (this.eventsSection) {
-                        this.box.add_child(this.eventsSection);
-                        if (this.eventsSection._eventsList) {
-                            this.connectedSignals.push(
-                                this.eventsSection._eventsList.connect(
-                                    'child-added',
-                                    () => this.newNotif(secName)
-                                )
-                            );
-                            this.connectedSignals.push(
-                                this.eventsSection._eventsList.connect(
-                                    'child-removed',
-                                    () => this.remNotif(secName)
-                                )
-                            );
-                        }
-                        this.eventsSection.setDate(new Date());
-                    }
-                } else {
-                    const sec = this[secName + 'Section'];
-                    if (sec) {
-                        this.removeSection(sec);
-                        this.box.add_child(sec);
-                        if (sec._list) {
-                            this.connectedSignals.push(
-                                sec._list.connect('child-added', () =>
-                                    this.newNotif(secName)
-                                )
-                            );
-                            this.connectedSignals.push(
-                                sec._list.connect('child-removed', () =>
-                                    this.remNotif(secName)
-                                )
-                            );
-                        }
-                        sec.add_style_class_name(
-                            'notification-center-message-list-section'
-                        );
-                    }
-                }
-            }
-        }
-
-        _setupMessageListPosition() {
             if (this._messageListParent && this._messageList) {
                 try {
                     this._messageListParent.remove_child(this._messageList);
                 } catch {
                     // ignore
                 }
-                if (this.prefs.get_boolean('calendar-on-left')) {
-                    this._messageListParent.insert_child_at_index(
-                        this._messageList,
-                        1
+                this.box.add_child(this._messageList);
+                this._messageList.visible = true;
+
+                try {
+                    this.connectedSignals.push(
+                        this._messageList.connect("child-added", () =>
+                            this.resetIndicator(),
+                        ),
                     );
-                    if (this.dateMenuVbox) {
-                        this.dateMenuVbox.add_style_class_name(
-                            'notification-center-datemenu-vbox'
-                        );
-                    }
-                } else {
-                    this._messageListParent.insert_child_at_index(
-                        this._messageList,
-                        0
+                    this.connectedSignals.push(
+                        this._messageList.connect("child-removed", () =>
+                            this.resetIndicator(),
+                        ),
                     );
+                } catch {
+                    // ignore
                 }
             }
+
+            if (this.dateMenuVbox) {
+                this.dateMenuVbox.style = "border-width: 0px";
+            }
+        }
+
+        _setupMessageListPosition() {
+            // Whole-list detachment mode handles messageList positioning in _setupSections
         }
 
         startNotificationCenter() {
@@ -852,14 +813,23 @@ const NotificationCenterClass = GObject.registerClass(
                             }
                             this.resetIndicator();
                         }
-                        this._messageList._sync();
-                        if (this.hideEmptySpace) {
+                        if (typeof this._messageList._sync === 'function') {
+                            this._messageList._sync();
+                        }
+                        if (
+                            this.notificationSectionToBeShown ||
+                            this.hideEmptySpace
+                        ) {
+                            this._messageList.visible = false;
+                        } else if (this._messageList._placeholder) {
                             this._messageList.visible =
                                 !this._messageList._placeholder.visible;
                         }
-                        this.dateMenuVbox.style = this._messageList.visible
-                            ? ''
-                            : 'border-width: 0px';
+                        if (this.dateMenuVbox) {
+                            this.dateMenuVbox.style = this._messageList.visible
+                                ? ''
+                                : 'border-width: 0px';
+                        }
                     } else {
                         Main.panel.statusArea.dateMenu._calendar.setDate(
                             new Date()
@@ -888,48 +858,36 @@ const NotificationCenterClass = GObject.registerClass(
         }
 
         _unparentSections() {
-            let len = this.showingSections.length;
-            while (len !== 0) {
-                const secName = this.showingSections[len - 1];
-                const sec = this[secName + 'Section'];
-                const targetList =
-                    sec && secName === 'events' ? sec._eventsList : sec?._list;
-
-                if (targetList) {
-                    try {
-                        targetList.disconnect(
-                            this.connectedSignals[2 * len - 1]
-                        );
-                        targetList.disconnect(
-                            this.connectedSignals[2 * len - 2]
-                        );
-                    } catch {
-                        // ignore signal disconnect errors
-                    }
+            if (this.box && this._messageList) {
+                try {
+                    this.box.remove_child(this._messageList);
+                } catch {
+                    // ignore
                 }
-
-                const boxChildren = this.box.get_children();
-                if (boxChildren.length >= len && boxChildren[len - 1]) {
-                    this.box.remove_child(boxChildren[len - 1]);
-                }
-                if (secName === 'events') {
-                    if (this.newEventsSectionParent && this.eventsSection) {
-                        this.newEventsSectionParent.add_child(
-                            this.eventsSection
-                        );
-                    }
-                } else if (sec && this._messageList) {
-                    this._messageList._addSection(sec);
-                }
-
-                if (sec) {
-                    sec.remove_style_class_name(
-                        'notification-center-message-list-section'
+            }
+            if (this._messageListParent && this._messageList) {
+                try {
+                    this._messageListParent.insert_child_at_index(
+                        this._messageList,
+                        0,
                     );
+                } catch {
+                    // ignore
                 }
-                this.connectedSignals.pop();
-                this.connectedSignals.pop();
-                len--;
+                this._messageList.visible = true;
+            }
+            if (this.dateMenuVbox) {
+                this.dateMenuVbox.style = "";
+            }
+            while (this.connectedSignals.length > 0) {
+                const sig = this.connectedSignals.pop();
+                if (this._messageList && sig) {
+                    try {
+                        this._messageList.disconnect(sig);
+                    } catch {
+                        // ignore
+                    }
+                }
             }
         }
 
