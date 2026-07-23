@@ -365,10 +365,7 @@ class NotificationCenter extends PanelMenu.Button {
   }  
 
   startNotificationCenter() {
-    if(this.prefs.get_double("current-version") < 23.03) {    
-      Main.notify("Notification Center","Extension is updated. Please Complete the update process in the extension preferences.");
-      return;
-    }
+
 
     this._indicator.add_child(this.eventsIcon);
     this._indicator.add_child(this.eventsLabel);

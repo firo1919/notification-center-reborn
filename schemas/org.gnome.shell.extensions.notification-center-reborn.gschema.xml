@@ -260,12 +260,6 @@ Version 23.04
    
     <!--  =============================================================================   Extension Variables  =========================================================================================== -->
 
-    <key name="current-version" type="d">
-      <default>23.00</default>
-      <summary>Version of Current Extension</summary>
-      <description>Provided to ensure that extension is stopped incase of autoupdate from previous version to prevent unwanted effects</description>
-    </key>
-
     <key name="reload-signal" type="b">
       <default>false</default>
       <summary>Signals the extension to reload </summary>
