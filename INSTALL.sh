@@ -10,6 +10,14 @@ uuid=$extensionDir
 
 echo "Starting installation for $uuid..."
 
+# Remove the old legacy extension if it exists to prevent conflicts
+oldExtensionDir=~/.local/share/gnome-shell/extensions/notification-center@Selenium-H
+if [ -d "$oldExtensionDir" ]; then
+  echo "Found legacy extension. Removing to prevent conflicts..."
+  rm -rf "$oldExtensionDir"
+  gnome-extensions disable "notification-center@Selenium-H" 2>/dev/null || true
+fi
+
 # Ensure we are in the script's directory
 cd "$(dirname "$0")"
 
