@@ -1,0 +1,11 @@
+{
+    "name": "Notification Center Reborn",
+    "description": "Detach notification center to top panel and customizations.Please reset the extension after updating.\nThe Extension will stop when upgraded to an incompatible version.\nIn that case an Update tab is created to easily reset the extension.\nA Reset button is also always present in Preferences option in the Top Right Application menu of the extension preferences window.",
+    "comment": "Detach notification center to top panel and customizations.",
+    "uuid": "notification-center-reborn@firo1919.github.com",
+    "settings-schema": "org.gnome.shell.extensions.notification-center-reborn",
+    "shell-version": ["45", "46", "47", "50"],
+    "status": "",
+    "url": "https://github.com/firo1919/notification-center-gnome",
+    "version": 24.02
+}
